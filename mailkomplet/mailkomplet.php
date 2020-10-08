@@ -13,7 +13,7 @@ class Mailkomplet extends Module
     {
         $this->name = 'mailkomplet';
         $this->tab = 'emailing';
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
         $this->author = 'Webkomplet, s.r.o.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
@@ -29,7 +29,12 @@ class Mailkomplet extends Module
     
     public function install()
     {
-        return (parent::install() && $this->registerHook('actionCustomerAccountAdd') && $this->registerHook('backOfficeHeader'));
+        return (
+            parent::install()
+            && $this->registerHook('actionCustomerAccountAdd')
+            && $this->registerHook('backOfficeHeader')
+            && $this->registerHook('header')
+        );
     }
     
     public function uninstall()
@@ -37,7 +42,8 @@ class Mailkomplet extends Module
         if (!parent::uninstall() ||
             !Configuration::deleteByName('MAILKOMPLET_LIST_ID') ||
             !Configuration::deleteByName('MAILKOMPLET_API_KEY') ||
-            !Configuration::deleteByName('MAILKOMPLET_BASE_CRYPT')
+            !Configuration::deleteByName('MAILKOMPLET_BASE_CRYPT') ||
+            !Configuration::deleteByName('MAILKOMPLET_SHOP_ID')
         )
             return false;
             
@@ -75,6 +81,7 @@ class Mailkomplet extends Module
                 $mailkomplet_list_id = Tools::getValue('MAILKOMPLET_LIST_ID');
                 $mailkomplet_api_key = Tools::getValue('MAILKOMPLET_API_KEY');
                 $mailkomplet_base_crypt = Tools::getValue('MAILKOMPLET_BASE_CRYPT');
+                $mailkomplet_shop_id = Tools::getValue('MAILKOMPLET_SHOP_ID');
                 if ((!$mailkomplet_list_id || empty($mailkomplet_list_id))
                     || (!$mailkomplet_api_key || empty($mailkomplet_api_key))
                     || (!$mailkomplet_base_crypt || empty($mailkomplet_base_crypt)))
@@ -84,6 +91,7 @@ class Mailkomplet extends Module
                     Configuration::updateValue('MAILKOMPLET_LIST_ID', $mailkomplet_list_id);
                     Configuration::updateValue('MAILKOMPLET_API_KEY', $mailkomplet_api_key);
                     Configuration::updateValue('MAILKOMPLET_BASE_CRYPT', $mailkomplet_base_crypt);
+                    Configuration::updateValue('MAILKOMPLET_SHOP_ID', $mailkomplet_shop_id);
                     $output .= $this->displayConfirmation($this->l('Settings updated'));
                 }
             }
@@ -137,6 +145,13 @@ class Mailkomplet extends Module
                     'required' => true
                 ),
                 array(
+                    'type' => 'text',
+                    'label' => $this->l('Shop Identity'),
+                    'name' => 'MAILKOMPLET_SHOP_ID',
+                    'size' => 100,
+                    'required' => false
+                ),
+                array(
                     'type' => 'hidden',
                     'name' => 'MAILKOMPLET_MODULE_PATH'
                 ),
@@ -164,7 +179,7 @@ class Mailkomplet extends Module
                         'id' => 'mailing_list_id',
                         'name' => 'mailing_list_name'
                     )
-                ),
+                )
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
@@ -206,6 +221,7 @@ class Mailkomplet extends Module
         $helper->fields_value['MAILKOMPLET_API_KEY'] = Configuration::get('MAILKOMPLET_API_KEY');
         $helper->fields_value['MAILKOMPLET_BASE_CRYPT'] = Configuration::get('MAILKOMPLET_BASE_CRYPT');
         $helper->fields_value['MAILKOMPLET_LIST_ID'] = Configuration::get('MAILKOMPLET_LIST_ID');
+        $helper->fields_value['MAILKOMPLET_SHOP_ID'] = Configuration::get('MAILKOMPLET_SHOP_ID');
         $helper->fields_value['MAILKOMPLET_MODULE_PATH'] = $this->_path;
         $helper->fields_value['MAILKOMPLET_STR_CONNECT'] = $this->l('Connect');
         $helper->fields_value['MAILKOMPLET_STR_CONNECTING'] = $this->l('Connecting');
@@ -254,8 +270,58 @@ class Mailkomplet extends Module
         }
     }
     
-    public function apiCall($apiKey, $baseCrypt, $method, $url, $data = null) {
-        return mailkompletApiCall($apiKey, $baseCrypt, $method, $url, $data);
+    public function hookDisplayHeader($params)
+    {
+        $mk_identity = Configuration::get('MAILKOMPLET_SHOP_ID');
+        if ($mk_identity == null || $mk_identity == '')
+            return false;
+        
+        $cart_items = $this->context->cart->getProducts();
+        $link = new Link();
+        foreach ($cart_items as &$cart_item) {
+            $product = new Product($cart_item['id_product'], null, $this->context->cart->id_lang);
+            $cart_item['product_url'] = $link->getProductLink($product);
+            
+            $image = Image::getCover($cart_item['id_product']);
+            $cart_item['image_url'] = $link->getImageLink($product->link_rewrite, $image['id_image'], 'home_default');
+            
+            $manufacturer = new Manufacturer($cart_item['id_manufacturer'], $this->context->cart->id_lang);
+            $cart_item['manufacturer'] = $manufacturer->name;
+        }
+        
+        $customer_email = null;
+        if ($this->context->customer->email != '' && $this->context->customer->email != null) {
+            $customer_email = $this->context->customer->email;
+        }
+        
+        $order_id = null;
+        if ($this->context->controller instanceOf OrderConfirmationController) {
+            $order_id = $this->context->controller->id_order;
+        }
+        
+        $currency_id = 5;
+        $currency = new Currency($this->context->cart->id_currency);
+        switch ($currency->iso_code) {
+            case 'EUR': $currency_id = 7; break;
+            case 'USD': $currency_id = 32; break;
+            case 'GBP': $currency_id = 33; break;
+        }
+        
+        $this->context->smarty->assign(
+            array(
+                'mk_identity' => $mk_identity,
+                'cart_items' => $cart_items,
+                'customer_email' => $customer_email,
+                'order_id' => $order_id,
+                'currency_id' => $currency_id
+            )
+        );
+        
+        return $this->display(__FILE__, 'mktracker.tpl');
+    }
+    
+    public function apiCall($api_key, $base_crypt, $method, $url, $data = null)
+    {
+        return mailkompletApiCall($api_key, $base_crypt, $method, $url, $data);
     }
 }
-    

@@ -37,7 +37,7 @@ $(function() {
 	        submitButton.hide();
 	        selectListGroup.hide();
 	
-	        $('<div class="form-group"><label class="control-label col-lg-3"></label><div class="col-lg-9 "><input type="submit" value="' + strConnect.val() + '" id="connectButton" class=""></div></div>').insertAfter("#configuration_form .form-wrapper .form-group:nth-child(2)");
+	        $('<div class="form-group"><label class="control-label col-lg-3"></label><div class="col-lg-9 "><input type="submit" value="' + strConnect.val() + '" id="connectButton" class=""></div></div>').insertAfter("#configuration_form .form-wrapper .form-group:nth-child(3)");
 	        connectButtonShown = true;
     	}
     }
