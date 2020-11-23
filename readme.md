@@ -1,9 +1,9 @@
 # Mail Komplet Module for PrestaShop
 
-[![N|Solid](https://www.webkomplet.cz/mydata/themes/webkomplet/img/logos/mail-komplet-logo.svg)](https://www.mail-komplet.cz)
+[![N|Solid](https://www.webkomplet.cz/mydata/themes/webkomplet/img/logos/mail-komplet-logo.svg)](https://www.mail-komplet.cz){:target="_blank"}
 
 ## Download link
-[Download version 1.1.1](https://github.com/Webkomplet/PrestashopModule)
+[Download version 1.1.1](https://github.com/Webkomplet/PrestashopModule/archive/master.zip){:target="_blank"}
 
 Tested up to: 1.6.1.17
 License: GPLv2 or later
@@ -18,4 +18,4 @@ mailing list. New customers will be sent to given mailing list after that. It al
 
 ## Installation
 
-[https://intercom.help/mail-komplet/cs/articles/4518622-jak-nainstalovat-plugin-pro-prestashop](https://intercom.help/mail-komplet/cs/articles/4518622-jak-nainstalovat-plugin-pro-prestashop)
+[https://intercom.help/mail-komplet/cs/articles/4518622-jak-nainstalovat-plugin-pro-prestashop](https://intercom.help/mail-komplet/cs/articles/4518622-jak-nainstalovat-plugin-pro-prestashop){:target="_blank"}
