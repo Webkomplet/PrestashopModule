@@ -43,7 +43,8 @@ class Mailkomplet extends Module
             !Configuration::deleteByName('MAILKOMPLET_LIST_ID') ||
             !Configuration::deleteByName('MAILKOMPLET_API_KEY') ||
             !Configuration::deleteByName('MAILKOMPLET_BASE_CRYPT') ||
-            !Configuration::deleteByName('MAILKOMPLET_SHOP_ID')
+            !Configuration::deleteByName('MAILKOMPLET_SHOP_ID') ||
+            !Configuration::deleteByName('MAILKOMPLET_WITHOUT_CONSENT')
         )
             return false;
             
@@ -68,10 +69,11 @@ class Mailkomplet extends Module
             // Additional info about this module
             $output .= '<fieldset style="padding: 25px;border: 2px solid #efefef; margin-bottom: 15px;">
 			<div style="float: right; width: 340px; height: 205px; border: dashed 1px #666; padding: 8px; margin-left: 12px; margin-top:-15px;">
-			<h2 style="color:#aad03d;">' . $this->l('Contact Mail Komplet') . '</h2>
+            <a href="https://www.mail-komplet.cz" target="_blank"><img src="' . $this->_path . 'images/logo-mk.png" width="322px"/></a><br/><br/>
 			<div style="clear: both;"></div>
-			<p>' . $this->l('Email') . ': <a href="' . $this->l('info@mail-komplet.cz') . '" style="color:#aad03d;">' . $this->l('info@mail-komplet.cz') . '</a><br>' . $this->l('Phone') . ': ' . $this->l('+420 517 070 000') . '</p>
-			<p style="padding-top:20px;"><b>' . $this->l('Visit us for more info') . ': </b><br><a href="' . $this->l('http://www.mail-komplet.cz') . '" target="_blank" style="color:#aad03d;">' . $this->l('http://www.mail-komplet.cz') . '</a></p>
+			<p><img src="' . $this->_path . 'images/obalka.png" height="12px" style="padding-right:12px"/><a href="mailto:' . $this->l('info@mail-komplet.cz') . '" style="color:#bf1f1f;">' . $this->l('info@mail-komplet.cz') . '</a><br><br>
+            <img src="' . $this->_path . 'images/telefon.png" height="12px" style="padding-right:12px"/>&nbsp;<a href="tel:' . $this->l('+420 517 070 000') . '" style="color:#bf1f1f;">' . $this->l('+420 517 070 000') . '</a></p>
+			<p style="padding-top:12px;"><b>' . $this->l('Visit us for more info') . ': </b><br><a href="' . $this->l('https://www.mail-komplet.cz') . '" target="_blank" style="color:#bf1f1f;">' . $this->l('https://www.mail-komplet.cz') . '</a></p>
 			</div>
 			</fieldset>';
             
@@ -82,6 +84,7 @@ class Mailkomplet extends Module
                 $mailkomplet_api_key = Tools::getValue('MAILKOMPLET_API_KEY');
                 $mailkomplet_base_crypt = Tools::getValue('MAILKOMPLET_BASE_CRYPT');
                 $mailkomplet_shop_id = Tools::getValue('MAILKOMPLET_SHOP_ID');
+                $mailkomplet_without_consent = Tools::getValue('MAILKOMPLET_WITHOUT_CONSENT_1') == "on";
                 if ((!$mailkomplet_list_id || empty($mailkomplet_list_id))
                     || (!$mailkomplet_api_key || empty($mailkomplet_api_key))
                     || (!$mailkomplet_base_crypt || empty($mailkomplet_base_crypt)))
@@ -92,6 +95,7 @@ class Mailkomplet extends Module
                     Configuration::updateValue('MAILKOMPLET_API_KEY', $mailkomplet_api_key);
                     Configuration::updateValue('MAILKOMPLET_BASE_CRYPT', $mailkomplet_base_crypt);
                     Configuration::updateValue('MAILKOMPLET_SHOP_ID', $mailkomplet_shop_id);
+                    Configuration::updateValue('MAILKOMPLET_WITHOUT_CONSENT', $mailkomplet_without_consent);
                     $output .= $this->displayConfirmation($this->l('Settings updated'));
                 }
             }
@@ -145,17 +149,6 @@ class Mailkomplet extends Module
                     'required' => true
                 ),
                 array(
-                    'type' => 'text',
-                    'label' => $this->l('Shop Identity'),
-                    'name' => 'MAILKOMPLET_SHOP_ID',
-                    'size' => 100,
-                    'required' => false
-                ),
-                array(
-                    'type' => 'hidden',
-                    'name' => 'MAILKOMPLET_MODULE_PATH'
-                ),
-                array(
                     'type' => 'hidden',
                     'name' => 'MAILKOMPLET_STR_CONNECT',
                     
@@ -167,6 +160,34 @@ class Mailkomplet extends Module
                 array(
                     'type' => 'hidden',
                     'name' => 'MAILKOMPLET_STR_AJAX_ERROR',
+                ),
+                array(
+                    'type' => 'checkbox',
+                    'label' => $this->l('Import without consent?'),
+                    'desc' => $this->l('Import contacts without consent with newsletters?'),
+                    'name' => 'MAILKOMPLET_WITHOUT_CONSENT',
+                    'size' => 100,
+                    'required' => true,
+                    'values' => array(
+                        'query' => array(
+                            array(
+                                'check_id' => '1'
+                            )
+                        ),
+                        'id' => 'check_id',
+                        'name' => 'name'
+                    )
+                ),
+                array(
+                    'type' => 'text',
+                    'label' => $this->l('Shop Identity'),
+                    'name' => 'MAILKOMPLET_SHOP_ID',
+                    'size' => 100,
+                    'required' => false
+                ),
+                array(
+                    'type' => 'hidden',
+                    'name' => 'MAILKOMPLET_MODULE_PATH'
                 ),
                 array(
                     'type' => 'select',
@@ -222,6 +243,7 @@ class Mailkomplet extends Module
         $helper->fields_value['MAILKOMPLET_BASE_CRYPT'] = Configuration::get('MAILKOMPLET_BASE_CRYPT');
         $helper->fields_value['MAILKOMPLET_LIST_ID'] = Configuration::get('MAILKOMPLET_LIST_ID');
         $helper->fields_value['MAILKOMPLET_SHOP_ID'] = Configuration::get('MAILKOMPLET_SHOP_ID');
+        $helper->fields_value['MAILKOMPLET_WITHOUT_CONSENT_1'] = Configuration::get('MAILKOMPLET_WITHOUT_CONSENT');
         $helper->fields_value['MAILKOMPLET_MODULE_PATH'] = $this->_path;
         $helper->fields_value['MAILKOMPLET_STR_CONNECT'] = $this->l('Connect');
         $helper->fields_value['MAILKOMPLET_STR_CONNECTING'] = $this->l('Connecting');
@@ -248,7 +270,7 @@ class Mailkomplet extends Module
     {
         $customer = $params['newCustomer'];
 
-        if ($customer->newsletter)
+        if (Configuration::get('MAILKOMPLET_WITHOUT_CONSENT') || $customer->newsletter)
         {
             $customer_gender = null;
             // male
@@ -257,6 +279,13 @@ class Mailkomplet extends Module
             // female
             elseif ($customer->id_gender == 2)
                 $customer_gender = false;
+            
+            
+            $custom_columns = array(
+                'ps_country' => $this->context->country->name,
+                'ps_shop' => $this->context->shop->name,
+                'ps_consent' => $customer->newsletter
+            );
                 
             $data = array(
                 'name' => $customer->firstname,
@@ -264,6 +293,7 @@ class Mailkomplet extends Module
                 'email' => $customer->email,
                 'sex' => $customer_gender,
                 'mailingListIds' => array(0 => Configuration::get('MAILKOMPLET_LIST_ID')),
+                'customColumns' => $custom_columns
             );
             
             $this->apiCall(Configuration::get('MAILKOMPLET_API_KEY'), Configuration::get('MAILKOMPLET_BASE_CRYPT'), 'POST', 'contacts/', $data);
@@ -275,7 +305,7 @@ class Mailkomplet extends Module
         $mk_identity = Configuration::get('MAILKOMPLET_SHOP_ID');
         if ($mk_identity == null || $mk_identity == '')
             return false;
-        
+
         $cart_items = $this->context->cart->getProducts();
         $link = new Link();
         foreach ($cart_items as &$cart_item) {
